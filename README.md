@@ -12,8 +12,19 @@ pip install spliceai-pytorch
 
 ## Usage
 ```python
+import torch
 from spliceai_pytorch import SpliceAI
 
+model_80nt = SpliceAI.from_preconfigured('80nt')
+# model_400nt = SpliceAI.from_preconfigured('400nt')
+# model_2k = SpliceAI.from_preconfigured('2k')
+# model_10k = SpliceAI.from_preconfigured('10k')
+
+# ... training ...
+
+x = torch.randn([1, 4, 80 + 5000])  # Predicts Donor/Acceptor probs only for core 5000nt region.
+
+probs = model_80nt(x)  # (1, 5000, 3)
 ```
 
 ## Generating train/test sets
