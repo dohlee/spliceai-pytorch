@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from einops import rearrange
+
 class Residual(nn.Module):
     def __init__(self, fn):
         super().__init__()
@@ -42,7 +44,7 @@ class SpliceAI_80nt(nn.Module):
         x = detour + self.block1(x)
         x = self.conv_last(x)
 
-        return x[..., 40:5000 + 40].softmax(dim=-1)
+        return rearrange(x[..., 40:5000 + 40], 'b c l -> b l c')
 
 class SpliceAI_400nt(nn.Module):
     S = 400
@@ -82,8 +84,7 @@ class SpliceAI_400nt(nn.Module):
         x = self.block2(x) + detour
         x = self.conv_last(x)
 
-        return x[..., 200:5000 + 200].softmax(dim=-1)
-
+        return rearrange(x[..., 200:5000 + 200], 'b c l -> b l c')
 
 class SpliceAI_2k(nn.Module):
     S = 2000
@@ -135,7 +136,7 @@ class SpliceAI_2k(nn.Module):
         x = self.block3(x) + detour
         x = self.conv_last(x)
 
-        return x[..., 1000:5000 + 1000].softmax(dim=-1)
+        return rearrange(x[..., 1000:5000 + 1000], 'b c l -> b l c')
 
 class SpliceAI_10k(nn.Module):
     S = 10000
@@ -198,7 +199,7 @@ class SpliceAI_10k(nn.Module):
         x = self.block4(x) + detour
         x = self.conv_last(x)
 
-        return x[..., 5000:5000 + 5000].softmax(dim=-1)
+        return rearrange(x[..., 5000:5000 + 5000], 'b c l -> b l c')
 
 class SpliceAI():
 

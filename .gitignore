@@ -1,4 +1,8 @@
 spliceai_train_code/
 
-note/.ipynb_checkpoints
+data/
+note/.ipynb_checkpoints/
 
+*.egg-info/
+
+**/__pycache__/
