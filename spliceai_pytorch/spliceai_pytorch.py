@@ -48,6 +48,41 @@ class SpliceAI_400nt(nn.Module):
     def __init__(self):
         super().__init__()
 
+        self.conv1 = nn.Conv1d(4, 32, 1, dilation=1, padding='same')
+        self.res_conv1 = nn.Conv1d(32, 32, 1, dilation=1, padding='same')
+
+        self.block1 = nn.Sequential(
+            ResidualBlock(32, 32, 11, 1),
+            ResidualBlock(32, 32, 11, 1),
+            ResidualBlock(32, 32, 11, 1),
+            ResidualBlock(32, 32, 11, 1),
+        )
+
+        self.res_conv2 = nn.Conv1d(32, 32, 1, dilation=1, padding='same')
+
+        self.block2 = nn.Sequential(
+            ResidualBlock(32, 32, 11, 4),
+            ResidualBlock(32, 32, 11, 4),
+            ResidualBlock(32, 32, 11, 4),
+            ResidualBlock(32, 32, 11, 4),
+            nn.Conv1d(32, 32, 1, dilation=1, padding='same'),
+        )
+
+        self.conv_last = nn.Conv1d(32, 3, 1, dilation=1, padding='same')
+    
+    def forward(self, x):
+        x = self.conv1(x)
+        detour = self.res_conv1(x)
+
+        x = self.block1(x)
+        detour += self.res_conv2(x)
+
+        x = self.block2(x) + detour
+        x = self.conv_last(x)
+
+        return x[..., x.size(0) // 2].softmax(dim=-1)
+
+
 class SpliceAI_2k(nn.Module):
     def __init__(self):
         super().__init__()
@@ -74,6 +109,9 @@ class SpliceAI():
 if __name__ == '__main__':
     import torch
     x = torch.randn([16, 4, 80])
-
     model = SpliceAI_80nt()
+    print(model(x).shape)
+
+    x = torch.randn([16, 4, 400])
+    model = SpliceAI_400nt()
     print(model(x).shape)
