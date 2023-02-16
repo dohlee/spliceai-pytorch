@@ -27,7 +27,10 @@ Then, run the following command to generate train/test sets after moving into `s
 chmod 755 grab_sequence.sh
 ./grab_sequence.sh
 
-# Requires Python 2.7, with numpy and h5py installed
+# Requires Python 2.7, with numpy, h5py, scikit-learn installed
 python create_datafile.py train all  # ~4 miniutes, creates datafile_train_all.h5 (27G)
 python create_datafile.py test 0     # ~1 minute, creates datafile_test_0.h5 (2.4G)
+
+python create_dataset.py train all   # ~11 minutes, creates dataset_train_all.h5 (5.4G)
+python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5G)
 ```
