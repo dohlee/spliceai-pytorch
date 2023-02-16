@@ -226,3 +226,7 @@ if __name__ == '__main__':
     x = torch.randn([16, 4, 10000])
     model = SpliceAI_10k()
     print(model(x).shape)
+
+    x = torch.randn([16, 4, 10000 + 5000 + 1000])
+    model = SpliceAI_10k()
+    print(model(x).shape)
