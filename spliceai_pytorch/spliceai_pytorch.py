@@ -42,9 +42,11 @@ class SpliceAI_80nt(nn.Module):
         x = detour + self.block1(x)
         x = self.conv_last(x)
 
-        return x[..., x.size(0) // 2].softmax(dim=-1)
+        return x[..., 40:5000 + 40].softmax(dim=-1)
 
 class SpliceAI_400nt(nn.Module):
+    S = 400
+
     def __init__(self):
         super().__init__()
 
@@ -80,10 +82,12 @@ class SpliceAI_400nt(nn.Module):
         x = self.block2(x) + detour
         x = self.conv_last(x)
 
-        return x[..., x.size(0) // 2].softmax(dim=-1)
+        return x[..., 200:5000 + 200].softmax(dim=-1)
 
 
 class SpliceAI_2k(nn.Module):
+    S = 2000
+
     def __init__(self):
         super().__init__()
 
@@ -131,9 +135,11 @@ class SpliceAI_2k(nn.Module):
         x = self.block3(x) + detour
         x = self.conv_last(x)
 
-        return x[..., x.size(0) // 2].softmax(dim=-1)
+        return x[..., 1000:5000 + 1000].softmax(dim=-1)
 
 class SpliceAI_10k(nn.Module):
+    S = 10000
+
     def __init__(self):
         super().__init__()
 
@@ -192,7 +198,7 @@ class SpliceAI_10k(nn.Module):
         x = self.block4(x) + detour
         x = self.conv_last(x)
 
-        return x[..., x.size(0) // 2].softmax(dim=-1)
+        return x[..., 5000:5000 + 5000].softmax(dim=-1)
 
 class SpliceAI():
 
@@ -211,22 +217,18 @@ class SpliceAI():
 
 if __name__ == '__main__':
     import torch
-    x = torch.randn([16, 4, 80])
+    x = torch.randn([16, 4, 80 + 5000])
     model = SpliceAI_80nt()
     print(model(x).shape)
 
-    x = torch.randn([16, 4, 400])
+    x = torch.randn([16, 4, 400 + 5000])
     model = SpliceAI_400nt()
     print(model(x).shape)
 
-    x = torch.randn([16, 4, 2000])
+    x = torch.randn([16, 4, 2000 + 5000])
     model = SpliceAI_2k()
     print(model(x).shape)
 
-    x = torch.randn([16, 4, 10000])
-    model = SpliceAI_10k()
-    print(model(x).shape)
-
-    x = torch.randn([16, 4, 10000 + 5000 + 1000])
+    x = torch.randn([16, 4, 10000 + 5000])
     model = SpliceAI_10k()
     print(model(x).shape)
