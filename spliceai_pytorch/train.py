@@ -9,6 +9,9 @@ import torch.nn.functional as F
 
 from torch.utils.data import TensorDataset, DataLoader
 from spliceai_pytorch import SpliceAI_80nt
+
+import wandb
+import os
 import numpy as np
 
 def shuffle(arr):
@@ -46,6 +49,10 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
 
                 running_output, running_label = [], []
 
+                wandb.log({
+                    'train/loss': loss.item(),
+                })
+
 
 def validate(model, h5f, val_shard_idxs, batch_size, criterion):
     model.eval()
@@ -68,6 +75,10 @@ def validate(model, h5f, val_shard_idxs, batch_size, criterion):
             label.append(_label)
 
     loss = criterion(torch.cat(out, dim=0), torch.cat(label, dim=0))
+    wandb.log({
+        'val/loss': loss.item(),
+    })
+
     return loss.item()
 
 def test(model, test_loader, device):
@@ -94,7 +105,6 @@ def seed_everything(seed):
     # torch.backends.cudnn.deterministic = True
 
 def main():
-    import pandas as pd
     import h5py
     import argparse
 
@@ -105,8 +115,13 @@ def main():
     parser.add_argument('--batch-size', '-b', type=int, default=6)
     parser.add_argument('--learning-rate', '-lr', type=float, default=1e-3)
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--use-wandb', action='store_true', default=False)
     args = parser.parse_args()
 
+    if not args.use_wandb:
+        os.environ['WANDB_MODE'] = 'disabled'
+
+    wandb.init(project='spliceai-pytorch', config=args, reinit=True)
     seed_everything(args.seed)
 
     train_h5f = h5py.File(args.train_h5, 'r')
@@ -128,9 +143,7 @@ def main():
         train(model, train_h5f, train_shard_idxs, args.batch_size, optimizer, criterion)
         validate(model, train_h5f, val_shard_idxs, args.batch_size, criterion)
 
-
         scheduler.step()
-
 
 if __name__ == '__main__':
     main()
