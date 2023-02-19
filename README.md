@@ -46,6 +46,17 @@ python create_dataset.py train all   # ~11 minutes, creates dataset_train_all.h5
 python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5G)
 ```
 
+## Reproduction status (wip)
+
+Currently on the reproduction of Figure 1E. Results are as below.
+
+|Model|Top-k acc. (target)|PR-AUC (target)|Top-k acc. (reproduced)|PR-AUC (reproduced)|
+|-----|:-----------------:|:-------------:|:---------------------:|:-----------------:|
+SpliceAI-80nt|0.57|0.60|?|?
+SpliceAI-400nt|0.90|0.95|?|?
+SpliceAI-2k|0.93|0.97|?|?
+SpliceAI-10k|0.95|0.98|?|?
+
 ## Citation
 ```bibtex
 @article{jaganathan2019predicting,
