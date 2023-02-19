@@ -45,3 +45,17 @@ python create_datafile.py test 0     # ~1 minute, creates datafile_test_0.h5 (2.
 python create_dataset.py train all   # ~11 minutes, creates dataset_train_all.h5 (5.4G)
 python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5G)
 ```
+
+## Citation
+```bibtex
+@article{jaganathan2019predicting,
+  title={Predicting splicing from primary sequence with deep learning},
+  author={Jaganathan, Kishore and Panagiotopoulou, Sofia Kyriazopoulou and McRae, Jeremy F and Darbandi, Siavash Fazel and Knowles, David and Li, Yang I and Kosmicki, Jack A and Arbelaez, Juan and Cui, Wenwu and Schwartz, Grace B and others},
+  journal={Cell},
+  volume={176},
+  number={3},
+  pages={535--548},
+  year={2019},
+  publisher={Elsevier}
+}
+```
