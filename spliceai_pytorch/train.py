@@ -9,6 +9,7 @@ import torch.nn.functional as F
 
 from torch.utils.data import TensorDataset, DataLoader
 from spliceai_pytorch import SpliceAI_80nt
+from sklearn.metrics import average_precision_score
 
 import wandb
 import os
@@ -49,16 +50,18 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
             running_output.append(out.detach().cpu())
             running_label.append(Y.detach().cpu())
 
-            if batch_idx % 100 == 0:
+            if batch_idx % 1000 == 0:
                 running_output = torch.cat(running_output, dim=0)
                 running_label = torch.cat(running_label, dim=0)
                 running_output_prob = running_output.softmax(dim=-1)
 
                 top_k_acc_1 = top_k_accuracy(running_output_prob[:, :, 1], running_label[:, :, 1])
                 top_k_acc_2 = top_k_accuracy(running_output_prob[:, :, 2], running_label[:, :, 2])
+                auprc_1 = average_precision_score(running_label[:, :, 1].view(-1), running_output_prob[:, :, 1].view(-1))
+                auprc_2 = average_precision_score(running_label[:, :, 2].view(-1), running_output_prob[:, :, 2].view(-1))
 
                 loss = criterion(running_output.reshape(-1, 3), running_label.argmax(dim=-1).view(-1))
-                bar.set_postfix(loss=f'{loss.item():.4f}', topk_acceptor=f'{top_k_acc_1.item():.4f}', topk_donor=f'{top_k_acc_2.item():.4f}')
+                bar.set_postfix(loss=f'{loss.item():.4f}', topk_acc=f'{top_k_acc_1.item():.4f}', topk_don=f'{top_k_acc_2.item():.4f}', auprc_acc=f'{auprc_1:.4f}', auprc_don=f'{auprc_2:.4f}')
 
                 running_output, running_label = [], []
 
@@ -66,6 +69,8 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
                     'train/loss': loss.item(),
                     'train/topk_acceptor': top_k_acc_1.item(),
                     'train/topk_donor': top_k_acc_2.item(),
+                    'train/auprc_acceptor': auprc_1,
+                    'train/auprc_donor': auprc_2,
                 })
             
             batch_idx += 1
@@ -98,13 +103,17 @@ def validate(model, h5f, val_shard_idxs, batch_size, criterion):
     loss = criterion(out.reshape(-1, 3), label.argmax(dim=-1).view(-1))
     top_k_acc_1 = top_k_accuracy(out_prob[:, :, 1], label[:, :, 1])
     top_k_acc_2 = top_k_accuracy(out_prob[:, :, 2], label[:, :, 2])
+    auprc_1 = average_precision_score(label[:, :, 1].view(-1), out_prob[:, :, 1].view(-1))
+    auprc_2 = average_precision_score(label[:, :, 2].view(-1), out_prob[:, :, 2].view(-1))
     
-    print(f'Val loss: {loss.item():.4f}, topk_acceptor: {top_k_acc_1.item():.4f}, topk_donor: {top_k_acc_2.item():.4f}')
+    print(f'Val loss: {loss.item():.4f}, topk_acc: {top_k_acc_1.item():.4f}, topk_don: {top_k_acc_2.item():.4f}, auprc_acc: {auprc_1:.4f}, auprc_don: {auprc_2:.4f}')
 
     wandb.log({
         'val/loss': loss.item(),
         'val/topk_acceptor': top_k_acc_1.item(),
         'val/topk_donor': top_k_acc_2.item(),
+        'val/auprc_acceptor': auprc_1,
+        'val/auprc_donor': auprc_2,
     })
 
     return loss.item()
@@ -136,13 +145,17 @@ def test(model, h5f, test_shard_idxs, batch_size, criterion):
     loss = criterion(out.reshape(-1, 3), label.argmax(dim=-1).view(-1))
     top_k_acc_1 = top_k_accuracy(out_prob[:, :, 1], label[:, :, 1])
     top_k_acc_2 = top_k_accuracy(out_prob[:, :, 2], label[:, :, 2])
+    auprc_1 = average_precision_score(label[:, :, 1].view(-1), out_prob[:, :, 1].view(-1))
+    auprc_2 = average_precision_score(label[:, :, 2].view(-1), out_prob[:, :, 2].view(-1))
     
-    print(f'Test loss: {loss.item():.4f}, topk_acceptor: {top_k_acc_1.item():.4f}, topk_donor: {top_k_acc_2.item():.4f}')
+    print(f'Test loss: {loss.item():.4f}, topk_acc: {top_k_acc_1.item():.4f}, topk_don: {top_k_acc_2.item():.4f}, auprc_acc: {auprc_1:.4f}, auprc_don: {auprc_2:.4f}')
 
     wandb.log({
         'test/loss': loss.item(),
         'test/topk_acceptor': top_k_acc_1.item(),
         'test/topk_donor': top_k_acc_2.item(),
+        'test/auprc_acceptor': auprc_1,
+        'test/auprc_donor': auprc_2,
     })
 
     return loss.item()
