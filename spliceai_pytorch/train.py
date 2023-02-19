@@ -21,8 +21,8 @@ def top_k_accuracy(pred_probs, labels):
     pred_probs, labels = map(lambda x: x.view(-1), [pred_probs, labels])  # Flatten
     k = (labels == 1.0).sum().item()
 
-    top_k_values, top_k_indices = pred_probs.topk(k)
-    correct = top_k_values.eq(labels[top_k_indices])
+    _, top_k_indices = pred_probs.topk(k)
+    correct = labels[top_k_indices] == 1.0
     return correct.float().mean()
 
 def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
@@ -35,14 +35,14 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
         Y = h5f[f'Y{shard_idx}'][0, ...]
 
         ds = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(Y).float())
-        loader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)  # TODO: Check whether drop_last=True?
+        loader = DataLoader(ds, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=8, pin_memory=True)  # TODO: Check whether drop_last=True?
         
         bar = tqdm.tqdm(loader, leave=False, total=len(loader), desc=f'Shard {i}/{len(train_shard_idxs)}')
         for batch in bar:
             X, Y = batch[0].cuda(), batch[1].cuda()
             optimizer.zero_grad()
             out = model(X) # (batch_size, 5000, 3)
-            loss = criterion(out, Y)
+            loss = criterion(out.reshape(-1, 3), Y.argmax(dim=-1).view(-1))
             loss.backward()
             optimizer.step()
 
@@ -52,12 +52,12 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
             if batch_idx % 100 == 0:
                 running_output = torch.cat(running_output, dim=0)
                 running_label = torch.cat(running_label, dim=0)
+                running_output_prob = running_output.softmax(dim=-1)
 
-                running_pred_probs = F.softmax(running_output, dim=-1)
-                top_k_acc_1 = top_k_accuracy(running_pred_probs[:, :, 1], running_label[:, :, 1])
-                top_k_acc_2 = top_k_accuracy(running_pred_probs[:, :, 2], running_label[:, :, 2])
+                top_k_acc_1 = top_k_accuracy(running_output_prob[:, :, 1], running_label[:, :, 1])
+                top_k_acc_2 = top_k_accuracy(running_output_prob[:, :, 2], running_label[:, :, 2])
 
-                loss = criterion(running_output, running_label)
+                loss = criterion(running_output.reshape(-1, 3), running_label.argmax(dim=-1).view(-1))
                 bar.set_postfix(loss=f'{loss.item():.4f}', topk_acceptor=f'{top_k_acc_1.item():.4f}', topk_donor=f'{top_k_acc_2.item():.4f}')
 
                 running_output, running_label = [], []
@@ -92,12 +92,12 @@ def validate(model, h5f, val_shard_idxs, batch_size, criterion):
             label.append(_label)
 
     out = torch.cat(out, dim=0)
-    out_pred_probs = F.softmax(out, dim=-1)
     label = torch.cat(label, dim=0)
+    out_prob = out.softmax(dim=-1)
 
-    loss = criterion(out, label)
-    top_k_acc_1 = top_k_accuracy(out_pred_probs[:, :, 1], label[:, :, 1])
-    top_k_acc_2 = top_k_accuracy(out_pred_probs[:, :, 2], label[:, :, 2])
+    loss = criterion(out.reshape(-1, 3), label.argmax(dim=-1).view(-1))
+    top_k_acc_1 = top_k_accuracy(out_prob[:, :, 1], label[:, :, 1])
+    top_k_acc_2 = top_k_accuracy(out_prob[:, :, 2], label[:, :, 2])
     
     print(f'Val loss: {loss.item():.4f}, topk_acceptor: {top_k_acc_1.item():.4f}, topk_donor: {top_k_acc_2.item():.4f}')
 
@@ -109,17 +109,43 @@ def validate(model, h5f, val_shard_idxs, batch_size, criterion):
 
     return loss.item()
 
-def test(model, test_loader, device):
+def test(model, h5f, test_shard_idxs, batch_size, criterion):
     model.eval()
-    correct = 0
-    with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-            pred = output.argmax(dim=1, keepdim=True)
-            correct += pred.eq(target.view_as(pred)).sum().item()
-    test_accuracy = 100. * correct / len(test_loader.dataset)
-    return test_accuracy
+
+    out, label = [], []
+    for shard_idx in test_shard_idxs:
+        X = h5f[f'X{shard_idx}'][:].transpose(0, 2, 1)
+        Y = h5f[f'Y{shard_idx}'][0, ...]
+
+        ds = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(Y).float())
+        loader = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=8, pin_memory=True)
+        
+        bar = tqdm.tqdm(loader, leave=False, total=len(loader))
+        for idx, batch in enumerate(bar):
+            X, Y = batch[0].cuda(), batch[1].cuda()
+            _out = model(X).detach().cpu()
+            _label = Y.detach().cpu()
+
+            out.append(_out)
+            label.append(_label)
+
+    out = torch.cat(out, dim=0)
+    label = torch.cat(label, dim=0)
+    out_prob = out.softmax(dim=-1)
+
+    loss = criterion(out.reshape(-1, 3), label.argmax(dim=-1).view(-1))
+    top_k_acc_1 = top_k_accuracy(out_prob[:, :, 1], label[:, :, 1])
+    top_k_acc_2 = top_k_accuracy(out_prob[:, :, 2], label[:, :, 2])
+    
+    print(f'Test loss: {loss.item():.4f}, topk_acceptor: {top_k_acc_1.item():.4f}, topk_donor: {top_k_acc_2.item():.4f}')
+
+    wandb.log({
+        'test/loss': loss.item(),
+        'test/topk_acceptor': top_k_acc_1.item(),
+        'test/topk_donor': top_k_acc_2.item(),
+    })
+
+    return loss.item()
 
 def seed_everything(seed):
     torch.manual_seed(seed)
@@ -140,7 +166,7 @@ def main():
     parser.add_argument('--train-h5', required=True)
     parser.add_argument('--test-h5', required=True)
     parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--batch-size', '-b', type=int, default=6)
+    parser.add_argument('--batch-size', '-b', type=int, default=18)
     parser.add_argument('--learning-rate', '-lr', type=float, default=1e-3)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--use-wandb', action='store_true', default=False)
@@ -160,16 +186,19 @@ def main():
     train_shard_idxs = shard_idxs[:int(0.9 * num_shards)]
     val_shard_idxs = shard_idxs[int(0.9 * num_shards):]
 
+    test_shard_idxs = np.arange(len(test_h5f.keys()) // 2)
+
     model = SpliceAI_80nt()
     model.cuda()
 
-    criterion = torch.nn.BCEWithLogitsLoss()
+    criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[6, 7, 8, 9], gamma=0.5)
 
     for epoch in range(args.epochs):
         train(model, train_h5f, train_shard_idxs, args.batch_size, optimizer, criterion)
         validate(model, train_h5f, val_shard_idxs, args.batch_size, criterion)
+        test(model, test_h5f, test_shard_idxs, args.batch_size, criterion)
 
         scheduler.step()
 
