@@ -17,19 +17,28 @@ import numpy as np
 def shuffle(arr):
     return np.random.choice(arr, size=len(arr), replace=False)
 
+def top_k_accuracy(pred_probs, labels):
+    pred_probs, labels = map(lambda x: x.view(-1), [pred_probs, labels])  # Flatten
+    k = (labels == 1.0).sum().item()
+
+    top_k_values, top_k_indices = pred_probs.topk(k)
+    correct = top_k_values.eq(labels[top_k_indices])
+    return correct.float().mean()
+
 def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
     model.train()
     running_output, running_label = [], []
 
+    batch_idx = 0
     for i, shard_idx in enumerate(shuffle(train_shard_idxs), 1):
         X = h5f[f'X{shard_idx}'][:].transpose(0, 2, 1)
         Y = h5f[f'Y{shard_idx}'][0, ...]
 
         ds = TensorDataset(torch.from_numpy(X).float(), torch.from_numpy(Y).float())
-        loader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)
+        loader = DataLoader(ds, batch_size=batch_size, shuffle=True, num_workers=8, pin_memory=True)  # TODO: Check whether drop_last=True?
         
         bar = tqdm.tqdm(loader, leave=False, total=len(loader), desc=f'Shard {i}/{len(train_shard_idxs)}')
-        for idx, batch in enumerate(bar):
+        for batch in bar:
             X, Y = batch[0].cuda(), batch[1].cuda()
             optimizer.zero_grad()
             out = model(X) # (batch_size, 5000, 3)
@@ -40,18 +49,26 @@ def train(model, h5f, train_shard_idxs, batch_size, optimizer, criterion):
             running_output.append(out.detach().cpu())
             running_label.append(Y.detach().cpu())
 
-            if idx % 100 == 0:
+            if batch_idx % 100 == 0:
                 running_output = torch.cat(running_output, dim=0)
                 running_label = torch.cat(running_label, dim=0)
 
+                running_pred_probs = F.softmax(running_output, dim=-1)
+                top_k_acc_1 = top_k_accuracy(running_pred_probs[:, :, 1], running_label[:, :, 1])
+                top_k_acc_2 = top_k_accuracy(running_pred_probs[:, :, 2], running_label[:, :, 2])
+
                 loss = criterion(running_output, running_label)
-                bar.set_postfix(loss=f'{loss.item():.4f}')
+                bar.set_postfix(loss=f'{loss.item():.4f}', topk_acceptor=f'{top_k_acc_1.item():.4f}', topk_donor=f'{top_k_acc_2.item():.4f}')
 
                 running_output, running_label = [], []
 
                 wandb.log({
                     'train/loss': loss.item(),
+                    'train/topk_acceptor': top_k_acc_1.item(),
+                    'train/topk_donor': top_k_acc_2.item(),
                 })
+            
+            batch_idx += 1
 
 
 def validate(model, h5f, val_shard_idxs, batch_size, criterion):
@@ -74,9 +91,20 @@ def validate(model, h5f, val_shard_idxs, batch_size, criterion):
             out.append(_out)
             label.append(_label)
 
-    loss = criterion(torch.cat(out, dim=0), torch.cat(label, dim=0))
+    out = torch.cat(out, dim=0)
+    out_pred_probs = F.softmax(out, dim=-1)
+    label = torch.cat(label, dim=0)
+
+    loss = criterion(out, label)
+    top_k_acc_1 = top_k_accuracy(out_pred_probs[:, :, 1], label[:, :, 1])
+    top_k_acc_2 = top_k_accuracy(out_pred_probs[:, :, 2], label[:, :, 2])
+    
+    print(f'Val loss: {loss.item():.4f}, topk_acceptor: {top_k_acc_1.item():.4f}, topk_donor: {top_k_acc_2.item():.4f}')
+
     wandb.log({
         'val/loss': loss.item(),
+        'val/topk_acceptor': top_k_acc_1.item(),
+        'val/topk_donor': top_k_acc_2.item(),
     })
 
     return loss.item()
