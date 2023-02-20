@@ -1,1 +1,1 @@
-from spliceai_pytorch import SpliceAI
+from spliceai_pytorch.spliceai_pytorch import SpliceAI
