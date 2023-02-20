@@ -65,7 +65,7 @@ NOTE: Target results are from ensemble of 5 models, while reproduced results are
 |Model|Top-k acc. (target)|PR-AUC (target)|Top-k acc. (reproduced)|PR-AUC (reproduced)|
 |-----|:-----------------:|:-------------:|:---------------------:|:-----------------:|
 SpliceAI-80nt|0.57|0.60|0.54355|0.56435|
-SpliceAI-400nt|0.90|0.95|?|?|
+SpliceAI-400nt|0.90|0.95|0.87265|0.93160|
 SpliceAI-2k|0.93|0.97|?|?|
 SpliceAI-10k|0.95|0.98|?|?|
 
