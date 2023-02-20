@@ -35,6 +35,8 @@ Also, download human reference genome (version hg19) to `spliceai_train_code/ref
 Then, run the following command to generate train/test sets after moving into `spliceai_train_code/Canonical`.
 
 ```bash
+# Before running `grab_sequence.sh`,
+# make sure that the variable CL_max is configured properly in `constants.py` (80, 400, 2000 or 10000)
 chmod 755 grab_sequence.sh
 ./grab_sequence.sh
 
@@ -44,6 +46,14 @@ python create_datafile.py test 0     # ~1 minute, creates datafile_test_0.h5 (2.
 
 python create_dataset.py train all   # ~11 minutes, creates dataset_train_all.h5 (5.4G)
 python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5G)
+```
+
+## Training
+```shell
+$ python -m spliceai_pytorch.train --model 80nt \  # 80nt, 400nt, 2k, 10k
+  --train-h5 spliceai_train_code/Canonical/dataset_train_all.h5 \
+  --test-h5 spliceai_train_code/Canonical/dataset_test_0.h5 \
+  --use-wandb
 ```
 
 ## Reproduction status (wip)

@@ -8,7 +8,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from torch.utils.data import TensorDataset, DataLoader
-from spliceai_pytorch import SpliceAI_80nt
+from spliceai_pytorch import SpliceAI
 from sklearn.metrics import average_precision_score
 
 import wandb
@@ -176,6 +176,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default='80nt', required=True)
     parser.add_argument('--train-h5', required=True)
     parser.add_argument('--test-h5', required=True)
     parser.add_argument('--epochs', type=int, default=10)
@@ -201,7 +202,7 @@ def main():
 
     test_shard_idxs = np.arange(len(test_h5f.keys()) // 2)
 
-    model = SpliceAI_80nt()
+    model = SpliceAI.from_preconfigured(args.model)
     model.cuda()
 
     criterion = torch.nn.CrossEntropyLoss()
