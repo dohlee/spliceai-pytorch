@@ -53,7 +53,7 @@ python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5
 $ python -m spliceai_pytorch.train --model 80nt \  # 80nt, 400nt, 2k, 10k
   --train-h5 spliceai_train_code/Canonical/dataset_train_all.h5 \
   --test-h5 spliceai_train_code/Canonical/dataset_test_0.h5 \
-  --use-wandb
+  --use-wandb  # Optional, for logging.
 ```
 
 ## Reproduction status (wip)

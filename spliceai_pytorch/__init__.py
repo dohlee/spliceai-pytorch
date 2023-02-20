@@ -1,1 +1,1 @@
-from spliceai_pytorch import SpliceAI_80nt, SpliceAI_400nt, SpliceAI_2k, SpliceAI_10k
+from spliceai_pytorch import SpliceAI
