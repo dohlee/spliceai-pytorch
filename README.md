@@ -50,12 +50,14 @@ python create_dataset.py test 0      # ~1 minute, creates dataset_test_0.h5 (0.5
 
 Currently on the reproduction of Figure 1E. Results are as below.
 
+NOTE: Target results are from ensemble of 5 models, while reproduced results are from a single model.
+
 |Model|Top-k acc. (target)|PR-AUC (target)|Top-k acc. (reproduced)|PR-AUC (reproduced)|
 |-----|:-----------------:|:-------------:|:---------------------:|:-----------------:|
-SpliceAI-80nt|0.57|0.60|?|?
-SpliceAI-400nt|0.90|0.95|?|?
-SpliceAI-2k|0.93|0.97|?|?
-SpliceAI-10k|0.95|0.98|?|?
+SpliceAI-80nt|0.57|0.60|0.54355|0.56435|
+SpliceAI-400nt|0.90|0.95|?|?|
+SpliceAI-2k|0.93|0.97|?|?|
+SpliceAI-10k|0.95|0.98|?|?|
 
 ## Citation
 ```bibtex
