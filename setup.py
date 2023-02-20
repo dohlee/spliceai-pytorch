@@ -4,7 +4,7 @@ setup(
   name = 'spliceai-pytorch',
   packages = find_packages(exclude=[]),
   include_package_data = True,
-  version = '0.0.3',
+  version = '0.0.4',
   license='MIT',
   description = 'SpliceAI - Pytorch',
   author = 'Dohoon Lee',
