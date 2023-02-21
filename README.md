@@ -58,7 +58,7 @@ $ python -m spliceai_pytorch.train --model 80nt \  # 80nt, 400nt, 2k, 10k
 
 ## Reproduction status (wip)
 
-Currently on the reproduction of Figure 1E. Results are as below.
+Currently on the reproduction of Figure 1E. Results are as below, and you can view [model training logs here (W&B)](https://wandb.ai/dohlee/spliceai-pytorch/reports/SpliceAI-reproduction-Single-model---VmlldzozNjAyNTE5?accessToken=mfmsivay143tqauivt18mxvuna3j1s7ff54c6lg749hjuf11r8xnsllj3ecs1okm).
 
 NOTE: Target results are from ensemble of 5 models, while reproduced results are from a single model.
 
