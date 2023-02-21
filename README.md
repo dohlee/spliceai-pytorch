@@ -67,7 +67,7 @@ NOTE: Target results are from ensemble of 5 models, while reproduced results are
 SpliceAI-80nt|0.57|0.60|0.54355|0.56435|
 SpliceAI-400nt|0.90|0.95|0.87265|0.93160|
 SpliceAI-2k|0.93|0.97|0.9083|0.9541|
-SpliceAI-10k|0.95|0.98|?|?|
+SpliceAI-10k|0.95|0.98|0.9286|0.96475|
 
 ## Citation
 ```bibtex
