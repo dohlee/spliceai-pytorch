@@ -1,4 +1,4 @@
-# spliceai-pytorch (wip)
+# spliceai-pytorch
 
 ![model](img/banner.png)
 
