@@ -177,6 +177,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', default='80nt', required=True)
+    parser.add_argument('--output', required=True)
     parser.add_argument('--train-h5', required=True)
     parser.add_argument('--test-h5', required=True)
     parser.add_argument('--epochs', type=int, default=10)
@@ -215,6 +216,8 @@ def main():
         test(model, test_h5f, test_shard_idxs, args.batch_size, criterion)
 
         scheduler.step()
+    
+    torch.save(model.state_dict(), args.output)
 
 if __name__ == '__main__':
     main()

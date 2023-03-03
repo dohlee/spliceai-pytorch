@@ -7,3 +7,4 @@ note/.ipynb_checkpoints/
 
 **/__pycache__/
 wandb/
+.snakemake/
